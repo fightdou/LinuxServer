@@ -1,0 +1,38 @@
+SMB文件传输服务器 （CIFS：Linux与windows）    
+1.软件包
+    服务器（Linux）：samba   cifs-utils
+    客户机（Windows）：不需要，只需要资源管理器
+    客户机（Linux）：samba   cifs-utils
+  2.配置文件
+在/etc/samba/smb.conf
+[share]
+        comment = samba share
+        path = /smbshare
+        create mask = 0664
+        directory mask = 0775
+        browseable = yes
+        read only = no
+        hosts allow = 172.31.31.0/24
+ 
+  3.服务
+   # systemctl start smb
+# systemctl start nmb
+# systemctl enable smb
+# systemctl enable nmb
+  4.防火墙
+    参照昨天的格式
+    放行：firewall-cmd --permanent --add-service=samba
+    查看：firewall-cmd --list-service
+  5.需要添加smb的用户
+1）需要系统内存在一个普通用户
+# useradd user 
+    2）把这个普通用户添加为smb用户
+	 # smbpasswd –a user
+在Linux客户，查看smb共享：
+  smbclient -L 172.31.31.15
+在Linux客户，登录：
+  smbclient //172.31.31.15/share -U samba
+在Windows客户，登录：
+  win+R，运行
+  \\服务器地址\共享名称
+    弹出登录框，写用户密码
