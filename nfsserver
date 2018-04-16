@@ -1,0 +1,40 @@
+nfs服务 (linux与linux)
+（将服务器端磁盘挂载到客户机）
+准备：
+1.确认网络通信正常
+  2.客户机iptables清空，SELinux不变（影响不大）
+  3.服务器：firewalld运行，SELinux强制
+实施：
+1）添加新磁盘，比如sdb
+2）安装软件包
+服务器端：nfs-utils
+3）建立共享目录
+挂载新磁盘（比如/dev/sdb1挂载到/mnt/nfsshare）
+在/etc/fstab里，使用UUID挂载
+查看UUID：blkid 格式化后的分区
+ 
+4) 添加NFS使用的用户
+# useradd –u 1500 doudou
+5）修改配置文件
+# vim /etc/exports
+/mnt/nfsshare172.25.0.15/24(rw,sync,all_squas,anonuid=150,anongid=1500) 
+6) 启动启用服务
+# systemctl start nfs-server
+# systemctl enable nfs-server
+7) 服务器修改防火墙规则
+firewall-cmd --permanent --add-service=nfs
+firewall-cmd --permanent --add-service=rpc-bind
+firewall-cmd --permanent --add-service=mountd
+重新加载防火墙
+firewall-cmd -reload
+或：systemctl reload firewalld
+8） SELinux设置（不需要额外配置）
+# getsebool –a | grep nfs
+关于NFS的bool值（默认开启，on状态）：
+  # setsebool -p nfs_export_all_ro=on
+  # setsebool -p nfs_export_all_rw=on
+9）客户机验证
+  # showmount –e 172.31.31.15  (服务器ip)
+10）客户机建立挂载目录，挂载NFS使用
+  # mount -t nfs 172.31.31.15:/mnt/nfsshare /nfsshare
+  # mount –t nfs (服务器ip):/(服务器共享文件夹)  /（挂载点）
