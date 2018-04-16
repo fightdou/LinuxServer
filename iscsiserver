@@ -1,0 +1,47 @@
+服务器：yum –y install targetcli
+客户端：yum –y install iscsi-initiator-utils
+服务器：   targetcli
+不关机创建磁盘（先在虚拟机内创建磁盘）
+# cat /proc/scsi/scsi
+# echo "scsi add-single-device 2 0 1 0" > /proc/scsi/scsi
+#  echo  "scsi add-single-device a b c d">/proc/scsi/scsi
+a是硬盘所在SCSI控制器号（我的VM有2个SCSI控制器，所以就是2）；
+b是硬盘所在SCSI通道的编号（一般单通道的就是0，多通道的要看是哪个通道了）；
+c是硬盘的SCSI ID号（可以通过具体插入的硬盘插槽来判断）；
+# fdisk –l
+1) 创建存储(backstores)
+切换至backstores/
+使用存储类型子命令创建
+新建存储在配置LUN前状态为deactivated
+/> cd backstores/
+2) 为目标创建iqn
+切换至/iscsi/执行create
+在iqn下将自动创建TPG
+若管理员忽略iqn字段，系统将自动创建IQN
+手动指定iqn须遵守iqn名称空间规则
+创建ACL
+在tpg/acls下使用create为客户节点创建acl
+客户将使用指定iqn连接至存储
+创建LUN
+在tgp/lun下为每个存储创建LUN
+创建portal配置
+在tgp/portals/下指定监听地址及端口
+默认端口3260/TCP
+通常监听地址为服务器外部连接地址
+若不指定地址，则使用0.0.0.0监听所有网络
+退出targetcli将自动保存配置
+添加防火墙允许规则
+# firewall-cmd --add-port=3260/tcp –permanent
+启动启用服务
+# systemctl start target
+# systemctl enable target
+客户端 
+# vim /etc/iscsi/initiatorname.iscsi
+InitiatorName=iqn.2018-04.com.example:client
+发现与登录
+在客户端发现目标，得到目标iqn
+iscsiadm -m discovery -t st -p targetaddress[:port]
+登录至目标
+iscsiadm -m node -T iqn.xxx [-p targetaddress[:port]] –l  登录
+iscsiadm -m node -T iqn.xxx [-p targetaddress[:port]] –u  注销
+iscsiadm -m node -T iqn.xxx [-p targetaddress[:port]] –o delete 删除记录
